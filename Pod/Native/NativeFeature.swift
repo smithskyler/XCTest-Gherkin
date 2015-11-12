@@ -22,10 +22,12 @@ private struct FileTags {
 
 class NativeFeature : CustomStringConvertible {
     let featureDescription: String
+    let tags: [String]
     let scenarios: [NativeScenario]
     
-    required init(description: String, scenarios:[NativeScenario]) {
+    required init(description: String, tags:[String], scenarios:[NativeScenario]) {
         self.featureDescription = description
+        self.tags = tags
         self.scenarios = scenarios
     }
     
@@ -48,19 +50,11 @@ extension NativeFeature {
         
         guard lines.count > 0 else { return nil }
         
-        // The feature description needs to be on the first line - we'll fail this method if it isn't!
-        let (_,suffixOption) = lines.first!.componentsWithPrefix(FileTags.Feature)
-        guard let suffix = suffixOption else { return nil }
+        // There is only one feature per file so we don't need these properties to be part of the ParseState object
+        var featureDescription = ""
+        var featureTags:[String] = []
 
-        let featureDescription = suffix
-        
-        let scenarios = NativeFeature.parseLines(lines)
-        
-        self.init(description: featureDescription, scenarios: scenarios)
-    }
-    
-    private class func parseLines(lines: [String]) -> [NativeScenario] {
-        
+        // Create the parser state, this will be built up and used to create each scenario
         var state = ParseState()
         var scenarios = Array<NativeScenario>()
         
@@ -68,10 +62,22 @@ extension NativeFeature {
         for (lineIndex,line) in lines.enumerate() {
             
             if !line.isEmpty {
+                // If this is a line of tags, record them and move on to the next line
+                if let tags = line.toTags() {
+                    state.tags = tags
+                    continue
+                }
+                
                 // What kind of line is it?
                 if let (linePrefix, lineSuffix) = line.lineComponents() {
                     
                     switch(linePrefix) {
+                    case FileTags.Feature:
+                        featureDescription = lineSuffix
+                        featureTags = state.tags
+                        state = ParseState()
+                        break
+                        
                     case FileTags.Scenario:
                         if let newScenarios = state.scenarios() {
                             scenarios.appendContentsOf(newScenarios)
@@ -94,9 +100,6 @@ extension NativeFeature {
                     case FileTags.ExampleLine:
                         state.exampleLines.append( (lineIndex+1, lineSuffix) )
                         
-                    case FileTags.Feature:
-                        break
-                        
                     default:
                         // Just ignore lines we don't recognise yet
                         break
@@ -113,7 +116,7 @@ extension NativeFeature {
             scenarios.appendContentsOf(newScenarios)
         }
     
-        return scenarios
+        self.init(description: featureDescription, tags:featureTags, scenarios:scenarios)
     }
 
 }
@@ -131,7 +134,7 @@ extension String {
     }
     
     func lineComponents() -> (String, String)? {
-        let prefixes = [ FileTags.Scenario, FileTags.Given, FileTags.When, FileTags.Then, FileTags.And, FileTags.Outline, FileTags.Examples, FileTags.ExampleLine ]
+        let prefixes = [ FileTags.Feature, FileTags.Scenario, FileTags.Given, FileTags.When, FileTags.Then, FileTags.And, FileTags.Outline, FileTags.Examples, FileTags.ExampleLine ]
         
         func first(a: [String]) -> (String, String)? {
             if a.count == 0 { return nil }
@@ -145,5 +148,16 @@ extension String {
         }
         
         return first(prefixes)
+    }
+    
+    /**
+        Takes a line and returns the tags from it
+     
+        - return: An array of tags, or nil if the string isn't a list of tags
+     */
+    func toTags() -> [String]? {
+        guard self.hasPrefix("@") else { return nil }
+        
+        return self.componentsSeparatedByString(",").map { $0.stringByTrimmingCharactersInSet(whitespace) }
     }
 }

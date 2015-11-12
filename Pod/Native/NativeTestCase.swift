@@ -41,7 +41,7 @@ public class NativeTestCase : XCTestCase {
         print("Running tests from \(url.lastPathComponent!)")
         
         // Parse the lines into a feature
-        let feature =  NativeFeature(contentsOfURL: url)
+        let feature = NativeFeature(contentsOfURL: url)
         XCTAssertNotNil(feature, "Could not parse \(url.lastPathComponent) into a feature")
         
         // Perform the feature

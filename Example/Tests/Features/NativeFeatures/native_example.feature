@@ -1,9 +1,12 @@
+@important
 Feature: Feature file parsing
 
+    @sanity, @simple
     Scenario: This is a basic happy path example
         Given I have a working Gherkin environment
         Then this test should not fail
 
+    @simple
     Scenario: Nested steps
         Given this step should call another step
         Then this test should not fail

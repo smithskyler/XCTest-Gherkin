@@ -14,6 +14,7 @@ class ParseState {
     var description: String?
     var steps: [String]
     var exampleLines: [ (lineNumber:Int, line:String) ]
+    var tags: [String]
     
     convenience init() {
         self.init(description: nil)
@@ -23,6 +24,7 @@ class ParseState {
         self.description = description
         steps = []
         exampleLines = []
+        tags = []
     }
     
     private var examples:[NativeExample] {
