@@ -6,11 +6,11 @@ Feature: Feature file parsing
         Given I have a working Gherkin environment
         Then this test should not fail
 
-    @simple
     Scenario: Nested steps
         Given this step should call another step
         Then this test should not fail
 
+    @tricky
     Scenario Outline: Demonstrate that examples work
         Given I use the example name <name>
         Then the age should be <age>

@@ -62,8 +62,13 @@ extension NativeFeature {
         for (lineIndex,line) in lines.enumerate() {
             
             if !line.isEmpty {
-                // If this is a line of tags, record them and move on to the next line
+
                 if let tags = line.toTags() {
+                    // If we hit a line of tags, we can assume that the previous scenario has finished
+                    if let newScenarios = state.scenarios() {
+                        scenarios.appendContentsOf(newScenarios)
+                    }
+                    state = ParseState()
                     state.tags = tags
                     continue
                 }
@@ -82,7 +87,7 @@ extension NativeFeature {
                         if let newScenarios = state.scenarios() {
                             scenarios.appendContentsOf(newScenarios)
                         }
-                        state = ParseState(description: lineSuffix)
+                        state = ParseState(description: lineSuffix, tags:state.tags)
                         
                     case FileTags.Given, FileTags.When, FileTags.Then, FileTags.And:
                         state.steps.append(lineSuffix)
@@ -91,7 +96,7 @@ extension NativeFeature {
                         if let newScenarios = state.scenarios() {
                             scenarios.appendContentsOf(newScenarios)
                         }
-                        state = ParseState(description: lineSuffix)
+                        state = ParseState(description: lineSuffix, tags:state.tags)
                         
                     case FileTags.Examples:
                         // Prep the examples array for examples

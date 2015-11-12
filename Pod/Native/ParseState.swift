@@ -10,7 +10,7 @@ import Foundation
 
 private let whitespace = NSCharacterSet.whitespaceCharacterSet()
 
-class ParseState {
+class ParseState: CustomDebugStringConvertible {
     var description: String?
     var steps: [String]
     var exampleLines: [ (lineNumber:Int, line:String) ]
@@ -20,11 +20,11 @@ class ParseState {
         self.init(description: nil)
     }
     
-    required init(description: String?) {
+    required init(description: String?, tags: [String] = []) {
         self.description = description
-        steps = []
-        exampleLines = []
-        tags = []
+        self.steps = []
+        self.exampleLines = []
+        self.tags = tags
     }
     
     private var examples:[NativeExample] {
@@ -58,6 +58,8 @@ class ParseState {
     }
     
     func scenarios() -> [NativeScenario]? {
+        //print("Attempting to get scenarios from \(self.debugDescription)")
+        
         guard let d = self.description else { return nil }
         guard self.steps.count > 0 else { return nil }
         
@@ -83,17 +85,24 @@ class ParseState {
                 
                 // The scenario description must be unique
                 let description = "\(d)_line\(example.lineNumber)"
-                scenarios.append(NativeScenario(description, steps: steps))
+                scenarios.append(NativeScenario(description, steps: steps, tags: self.tags))
                 
             }
         } else {
-            scenarios.append(NativeScenario(d, steps: self.steps))
+            scenarios.append(NativeScenario(d, steps: self.steps, tags: self.tags))
         }
         
         self.description = nil
         self.steps = []
         self.exampleLines = []
+        self.tags = []
         
         return scenarios
+    }
+    
+    var debugDescription: String {
+        get {
+            return "<\(self.dynamicType) '\(description)' \(steps.count) steps, \(exampleLines.count) examples, tags:'\(tags.joinWithSeparator(", "))'  >"
+        }
     }
 }
