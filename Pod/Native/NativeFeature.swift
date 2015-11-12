@@ -156,7 +156,7 @@ extension String {
         - return: An array of tags, or nil if the string isn't a list of tags
      */
     func toTags() -> [String]? {
-        guard self.hasPrefix("@") else { return nil }
+        guard self.stringByTrimmingCharactersInSet(whitespace).hasPrefix("@") else { return nil }
         
         return self.componentsSeparatedByString(",").map { $0.stringByTrimmingCharactersInSet(whitespace) }
     }
