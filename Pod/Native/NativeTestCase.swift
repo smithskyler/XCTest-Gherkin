@@ -13,8 +13,10 @@ import XCTest
 
 public class NativeTestCase : XCTestCase {
     
-    public var path:NSURL?
-    
+    // Set some default values for this subclass; these should be overridden by subclasses
+    public var path:NSURL? { get { return nil } }
+    public var tags:[String] { get { return [] } }
+   
     /**
      This method will dynamically create tests from the files in the folder specified by setting the path property on this instance.
     */
@@ -50,7 +52,7 @@ public class NativeTestCase : XCTestCase {
     
     func performFeature(feature: NativeFeature) {
         // Create a test case to contain our tests
-        let testClassName = "\(feature.featureDescription.camelCaseify)Tests"
+        let testClassName = "\(self.dynamicType)\(feature.featureDescription.camelCaseify)Tests"
         let testCaseClassOptional:AnyClass? = objc_allocateClassPair(XCTestCase.self, testClassName, 0)
         guard let testCaseClass = testCaseClassOptional else { XCTFail("Could not create test case class"); return }
         
@@ -83,7 +85,10 @@ public class NativeTestCase : XCTestCase {
         
         // For each scenario, make an invocation that runs through the steps
         let typeString = strdup("v@:")
-        feature.scenarios.forEach { scenario in
+        for scenario in feature.scenarios {
+            // If this scenario doesn't have the correct tags, don't run it
+            if !isScenario(scenario, validWithTags:self.tags) { continue }
+            
             print(scenario.description)
             
             // Create the block representing the test to be run
@@ -109,5 +114,20 @@ public class NativeTestCase : XCTestCase {
             testCase.runTest()
         }
         
+    }
+    
+    private func isScenario(scenario: NativeScenario, validWithTags tags: [String]) -> Bool {
+        // If there aren't any tags, that means accept anything
+        guard tags.count > 0 else { return true }
+        
+        // If we contain _any_ of the tags, this scenario is OK
+        for tag in tags {
+            if scenario.tags.contains(tag) {
+                return true
+            }
+        }
+
+        // There were tag and we didn't have any
+        return false
     }
 }

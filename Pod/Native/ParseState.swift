@@ -84,7 +84,7 @@ class ParseState: CustomDebugStringConvertible {
                 }
                 
                 // The scenario description must be unique
-                let description = "\(d)_line\(example.lineNumber)"
+                let description = "\(d):\(example.lineNumber)"
                 scenarios.append(NativeScenario(description, steps: steps, tags: self.tags))
                 
             }
