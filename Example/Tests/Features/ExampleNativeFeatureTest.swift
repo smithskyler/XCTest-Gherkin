@@ -14,11 +14,11 @@ class RunSingleFeatureFileTest: NativeTestCase {
     override func setUp() {
         super.setUp()
         
-        let bundle = NSBundle(forClass: self.dynamicType)
+        let bundle = Bundle(for: type(of: self))
         
         // In case you want to use only one feature file instead of the whole folder
         // Just provide the URL to the file
-        self.path = bundle.resourceURL?.URLByAppendingPathComponent("NativeFeatures/native_example.feature")
+        self.path = bundle.resourceURL?.appendingPathComponent("NativeFeatures/native_example.feature")
     }
 }
 
@@ -27,7 +27,7 @@ class RunMultipleFeatureFilesTest: NativeTestCase {
     override func setUp() {
         super.setUp()
         
-        let bundle = NSBundle(forClass: self.dynamicType)
-        self.path = bundle.resourceURL?.URLByAppendingPathComponent("NativeFeatures/")
+        let bundle = Bundle(for: type(of: self))
+        self.path = bundle.resourceURL?.appendingPathComponent("NativeFeatures/")
     }
 }

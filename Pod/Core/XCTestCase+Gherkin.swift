@@ -42,7 +42,7 @@ class GherkinState {
 */
 public extension XCTestCase {
     
-    private struct AssociatedKeys {
+    fileprivate struct AssociatedKeys {
         static var State = "AssociatedStateKey"
     }
     
@@ -65,7 +65,7 @@ public extension XCTestCase {
         guard state.steps.count == 0 else { return }
 
         // Create an instance of each step definer and call it's defineSteps method
-        allSubclassesOf(StepDefiner).forEach { subclass in
+        allSubclassesOf(StepDefiner.self).forEach { subclass in
             subclass.init(test: self).defineSteps()
         }
         
@@ -83,29 +83,29 @@ public extension XCTestCase {
         print("-------------")
         print(ColorLog.darkGreen("Defined steps"))
         print("-------------")
-        print(instance.state.steps.map { String(reflecting: $0) }.sort { $0.lowercaseString < $1.lowercaseString }.joinWithSeparator("\n"))
+        print(instance.state.steps.map { String(reflecting: $0) }.sorted { $0.lowercased() < $1.lowercased() }.joined(separator: "\n"))
         print("-------------")
     }
     
     /**
      Run the step matching the specified expression
      */
-    func Given(expression: String) -> Self { return performStep(expression) }
+    func Given(_ expression: String) { performStep(expression) }
     
     /**
      Run the step matching the specified expression
      */
-    func When(expression: String) -> Self { return performStep(expression) }
+    func When(_ expression: String) { performStep(expression) }
     
     /**
      Run the step matching the specified expression
      */
-    func Then(expression: String) -> Self { return performStep(expression) }
+    func Then(_ expression: String) { performStep(expression) }
     
     /**
      Run the step matching the specified expression
      */
-    func And(expression: String) -> Self { return performStep(expression) }
+    func And(_ expression: String) { performStep(expression) }
     
     /**
      Supply a set of example data to the test. This must be done before calling `Outline`.
@@ -115,9 +115,9 @@ public extension XCTestCase {
      - parameter titles: The titles for each column; these are the keys used to replace the placeholders in each step
      - parameter allValues: This is an array of columns - each array will be used as a single test
      */
-    func Examples(titles: [String], _ allValues: [String]...) {
+    func Examples(_ titles: [String], _ allValues: [String]...) {
         var all = [titles]
-        all.appendContentsOf(allValues)
+        all.append(contentsOf: allValues)
         Examples(all)
     }
     
@@ -135,7 +135,7 @@ public extension XCTestCase {
          Examples(examples)
      
      */
-    func Examples(values: [[String]]) {
+    func Examples(_ values: [[String]]) {
         XCTAssert(values.count > 1, "You must pass at least one set of example data")
         
         // Split out the titles and the example data
@@ -166,7 +166,7 @@ public extension XCTestCase {
      
      - parameter routine: A block containing your Given/When/Then which will be run once per example
      */
-    func Outline( @noescape routine:()->() ) {
+    func Outline( _ routine: ()->() ) {
         
         XCTAssertNotNil(state.examples, "You need to define examples before running an Outline block - use Examples(...)");
         XCTAssert(state.examples!.count > 0, "You've called Examples but haven't passed anything in. Nice try.")
@@ -189,7 +189,7 @@ extension XCTestCase {
     /**
      Adds a step to the global store of steps, but only if this expression isn't already defined with a step
     */
-    func addStep(expression: String, file: String, line: Int, _ function: ([String])->()) {
+    func addStep(_ expression: String, file: String, line: Int, _ function: @escaping ([String])->()) {
         let step = Step(expression, file: file, line: line, function)
         state.steps.insert(step);
     }
@@ -197,7 +197,7 @@ extension XCTestCase {
     /**
      Finds and performs a step test based on expression
      */
-    func performStep(initialExpression: String) -> Self {
+    func performStep(_ initialExpression: String) {
         // Get a mutable copy - if we are in an outline we might be changing this
         var expression = initialExpression
         
@@ -209,14 +209,14 @@ extension XCTestCase {
             // For each field in the example, go through the step expression and replace the placeholders if needed
             example.forEach { (key, value) in
                 let needle = "<\(key)>"
-                expression = (expression as NSString).stringByReplacingOccurrencesOfString(needle, withString: value)
+                expression = (expression as NSString).replacingOccurrences(of: needle, with: value)
             }
         }
         
         // Get the step(s) which match this expression
         let range = NSMakeRange(0, expression.characters.count)
         let matches = state.steps.map { (step: Step) -> (step:Step, match:NSTextCheckingResult)? in
-            if let match = step.regex.firstMatchInString(expression, options: [], range: range) {
+            if let match = step.regex.firstMatch(in: expression, options: [], range: range) {
                 return (step:step, match:match)
             } else {
                 return nil
@@ -226,7 +226,7 @@ extension XCTestCase {
         // Get the step and the matches inside it
         guard let (step, match) = matches.first else {
             state.stepChecker.matchGherkinStepExpressionToStepDefinitions(expression)
-            state.stepChecker.shouldPrintTemplateCodeForAllMissingSteps()
+            state.stepChecker.printTemplateCodeForAllMissingSteps()
             fatalError("failed to find a match for a step")
         }
         
@@ -234,15 +234,15 @@ extension XCTestCase {
         // TODO: This should really only need to be a map function :(
         var matchStrings = Array<String>()
         for i in 1..<match.numberOfRanges {
-            let range = match.rangeAtIndex(i)
-            let string = range.location != NSNotFound ? (expression as NSString).substringWithRange(range) : ""
+            let range = match.rangeAt(i)
+            let string = range.location != NSNotFound ? (expression as NSString).substring(with: range) : ""
             matchStrings.append(string)
         }
         
         // If this the first step, debug the test name as well
         if state.currentStepDepth == 0 {
-            let rawName = String(self.invocation!.selector)
-            let testName = rawName.hasPrefix("test") ? (rawName as NSString).substringFromIndex(4) : rawName
+            let rawName = String(describing: self.invocation!.selector)
+            let testName = rawName.hasPrefix("test") ? (rawName as NSString).substring(from: 4) : rawName
             if testName != state.currentTestName {
                 NSLog("steps from \(ColorLog.darkGreen(testName.humanReadableString))")
                 state.currentTestName = testName
@@ -257,8 +257,6 @@ extension XCTestCase {
         state.currentStepDepth += 1
         step.function(matchStrings)
         state.currentStepDepth -= 1
-        
-        return self
     }
     
     /**
@@ -266,7 +264,7 @@ extension XCTestCase {
      
      - returns: A String of spaces equal to the current step depth
      */
-    private func currentStepDepthString() -> String {
-        return Repeat<String>(count: state.currentStepDepth, repeatedValue: " ").joinWithSeparator("")
+    fileprivate func currentStepDepthString() -> String {
+        return repeatElement(" ", count: state.currentStepDepth).joined(separator: "")
     }
 }

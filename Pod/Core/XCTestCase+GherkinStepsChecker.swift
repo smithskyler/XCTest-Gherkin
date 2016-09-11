@@ -11,18 +11,18 @@ import XCTest
 
 class GherkinStepsChecker: XCTestCase {
     
-    private var missingStepsImplementations = [String]()
+    fileprivate var missingStepsImplementations = [String]()
     
     func loadDefinedSteps(){
         loadAllStepsIfNeeded()
     }
     
-    func matchGherkinStepExpressionToStepDefinitions(expression: String){
+    func matchGherkinStepExpressionToStepDefinitions(_ expression: String){
         
         // Get the step(s) which match this expression
         let range = NSMakeRange(0, expression.characters.count)
         let matches = state.steps.map { (step: Step) -> (step:Step, match:NSTextCheckingResult)? in
-            if let match = step.regex.firstMatchInString(expression, options: [], range: range) {
+            if let match = step.regex.firstMatch(in: expression, options: [], range: range) {
                 return (step:step, match:match)
             } else {
                 return nil
@@ -34,7 +34,7 @@ class GherkinStepsChecker: XCTestCase {
         case 0:
             XCTFail("Step definition not found for '\(ColorLog.red(expression))'")
             let stepImplementation = "step(\"\(expression)"+"\") {XCTAssertTrue(true)}"
-            missingStepsImplementations.append(stepImplementation)
+            self.missingStepsImplementations.append(stepImplementation)
             
         case 1:
             //no issues, so proceed
@@ -47,20 +47,24 @@ class GherkinStepsChecker: XCTestCase {
         
     }
     
-    func shouldPrintTemplateCodeForAllMissingSteps() -> Bool {
+    func hasMissingSteps() -> Bool {
+        return self.missingStepsImplementations.count > 0
+    }
+    
+    func printTemplateCodeForAllMissingSteps() {
         guard missingStepsImplementations.count > 0 else {
-            ColorLog.lightGreen("All Gherkin steps have been defined in a StepDefiner subclass")
-            return false
+            print(ColorLog.lightGreen("All Gherkin steps have been defined in a StepDefiner subclass"))
+            return
         }
         
-        self.dynamicType.printStepDefinitions()
+        type(of: self).printStepDefinitions()
         
         print(ColorLog.red("Copy paste these steps in a StepDefiner subclass:"))
         print("-------------")
-        missingStepsImplementations.forEach({
+        self.missingStepsImplementations.forEach({
             print($0)
         })
         print("-------------")
-        return true
+        return
     }
 }
