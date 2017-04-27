@@ -107,7 +107,7 @@ class GherkinState {
 		guard self.steps.count == 0 else { return }
 		
 		// Create an instance of each step definer and call its defineSteps method
-		allSubclassesOf(StepDefiner.self, excludingBundles: [ Bundle(for: WKWebView.self) ]).forEach { (subclass, excluding) in
+		allSubclassesOf(StepDefiner.self).forEach { (subclass) in
 			let testCaseStepDefiner = String(describing: subclass)
 			let testCase = String(describing: type(of: self.test!))
 			if testCaseStepDefiner == testCase + "Steps" {
