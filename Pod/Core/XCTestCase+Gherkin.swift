@@ -103,16 +103,20 @@ class GherkinState {
         print("-------------")
     }
     
-    func loadAllStepsIfNeeded() {
-        guard self.steps.count == 0 else { return }
-        
-        // Create an instance of each step definer and call it's defineSteps method
-        allSubclassesOf(StepDefiner.self).forEach { subclass in
-            subclass.init(test: self.test!).defineSteps()
-        }
-        
-        assert(self.steps.count > 0, "No steps have been defined - there must be at least one subclass of StepDefiner which defines at least one step!")
-    }
+	func loadAllStepsIfNeeded() {
+		guard self.steps.count == 0 else { return }
+		
+		// Create an instance of each step definer and call its defineSteps method
+		allSubclassesOf(StepDefiner.self, excludingBundles: [ Bundle(for: WKWebView.self) ]).forEach { subclass in
+			let a = String(describing: subclass)
+			let b = String(describing: type(of: self.test!)) + "Steps"
+			if a == b {
+				subclass.init(test: self.test!).defineSteps()
+			}
+		}
+		
+		assert(self.steps.count > 0, "No steps have been defined - there must be at least one subclass of StepDefiner which defines at least one step!")
+	}
 }
 
 /**
